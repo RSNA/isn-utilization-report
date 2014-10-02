@@ -43,7 +43,6 @@ import java.util.Date;
 import java.util.Properties;
 import org.apache.commons.io.IOUtils;
 import org.rsna.isn.util.Environment;
-import org.rsna.isn.util.PasswordEncryption;
 import org.rsna.isn.utilizationreport.App;
 import org.rsna.isn.utilizationreport.GSpreadsheet;
 
@@ -144,7 +143,7 @@ public class TestConnection
             boolean loginSuccess = true;
             try
             {
-                     gSheet.login(gDocUser,PasswordEncryption.decrypt(gDocPass));
+                     gSheet.login(gDocUser,gDocPass);
                      
             }
             catch (AuthenticationException ex) 

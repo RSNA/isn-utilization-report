@@ -40,7 +40,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.rsna.isn.dao.ConfigurationDao;
 import org.rsna.isn.util.Environment;
-import org.rsna.isn.util.PasswordEncryption;
 
 /**
  * This app sends utilization statistics to Google Docs. 
@@ -132,7 +131,7 @@ public class App
             
             try
             {
-                     gSheet.login(gDocUser,PasswordEncryption.decrypt(gDocPass));
+                     gSheet.login(gDocUser,gDocPass);
             }
             catch (AuthenticationException ex) 
             {
