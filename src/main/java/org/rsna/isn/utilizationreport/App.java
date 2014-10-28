@@ -26,17 +26,11 @@ package org.rsna.isn.utilizationreport;
 
 
 import com.google.gdata.util.AuthenticationException;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.Properties;
 import java.util.Random;
-import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.rsna.isn.dao.ConfigurationDao;
 import org.rsna.isn.util.Environment;
@@ -51,7 +45,7 @@ public class App
 {
     private static final Logger logger = Logger.getLogger(App.class);
     
-    public static void main( String[] args ) throws FileNotFoundException, IOException, InterruptedException, SQLException
+    public static void main( String[] args ) throws InterruptedException, SQLException
     {
             Environment.init("utilization-report");
         
@@ -76,8 +70,8 @@ public class App
             File confDir = Environment.getConfDir();
             File propFile = new File(confDir, "gdoc.properties");
 
-
-            if (propFile.exists())
+            
+            try
             {
                     FileInputStream in = new FileInputStream(propFile);
                     props.load(in);
@@ -86,22 +80,12 @@ public class App
                     
                     logger.info("Loaded properties from " + propFile.getPath());
             }
-            else
+            catch (Exception ex)
             {
-                    InputStream in = App.class.getResourceAsStream("gdoc.properties");
-
-                    byte buffer[] = IOUtils.toByteArray(in);
-                    in.close();
-
-                    props.load(new ByteArrayInputStream(buffer));
-
-                    FileOutputStream fos = new FileOutputStream(propFile);
-                    fos.write(buffer);
-                    fos.close();
-                    
-                    logger.info("Created properties file: " + propFile.getPath());
+                    logger.info("gdoc.properties file not found in " + confDir.getPath());
+                    return;
             }
-
+            
             
             String gDocUser = props.getProperty("gdoc.username");
             String gDocPass = props.getProperty("gdoc.password");

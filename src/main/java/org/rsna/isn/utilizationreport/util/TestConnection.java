@@ -28,12 +28,9 @@ import com.google.gdata.data.spreadsheet.CellEntry;
 import com.google.gdata.data.spreadsheet.CellFeed;
 import com.google.gdata.util.AuthenticationException;
 import com.google.gdata.util.ServiceException;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.text.DateFormat;
@@ -41,9 +38,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Properties;
-import org.apache.commons.io.IOUtils;
 import org.rsna.isn.util.Environment;
-import org.rsna.isn.utilizationreport.App;
 import org.rsna.isn.utilizationreport.GSpreadsheet;
 
 
@@ -70,7 +65,7 @@ public class TestConnection
             File confDir = Environment.getConfDir();
             File propFile = new File(confDir, "gdoc.properties");
 
-            if (propFile.exists())
+            try
             {
                     FileInputStream in = new FileInputStream(propFile);
                     props.load(in);
@@ -78,24 +73,13 @@ public class TestConnection
                     in.close();
                     
                     System.out.println("Loading gdoc.properties...");
-
             }
-            else
+            catch (Exception ex)
             {
-                    InputStream in = App.class.getResourceAsStream("gdoc.properties");
-
-                    byte buffer[] = IOUtils.toByteArray(in);
-                    in.close();
-
-                    props.load(new ByteArrayInputStream(buffer));
-
-                    FileOutputStream fos = new FileOutputStream(propFile);
-                    fos.write(buffer);
-                    fos.close();
-                    
-                    System.out.println("Created properties file: " + propFile.getPath());
+                    System.out.println("gdoc.properties file not found in " + confDir.getPath());
+                    return;
             }
-            
+        
             String gDocUser = props.getProperty("gdoc.username");
             String gDocPass = props.getProperty("gdoc.password");
             String gDocSpreadsheet = props.getProperty("gdoc.spreadsheet");
@@ -127,20 +111,20 @@ public class TestConnection
                     catch (Exception ex)
                     {
                             System.out.println("Cannot connect to " + proxyHost + ":" + proxyPort + ". Please check local and RSNA firewall. " + ex);
-                            return; 
+                            return;
                     }
 
                     System.out.println("Connected to " + proxyHost + ":" + proxyPort);
             }
             else
             {
-                    System.out.println("Proxy not set.");
+                    System.out.println("Proxy not set. Enable proxySet variable to true.");
+                    return;
             }
 
                         
             GSpreadsheet gSheet = new GSpreadsheet();
             
-            boolean loginSuccess = true;
             try
             {
                      gSheet.login(gDocUser,gDocPass);
@@ -148,19 +132,12 @@ public class TestConnection
             }
             catch (AuthenticationException ex) 
             {
-                     System.out.println("Unable to authenticate to Google Docs" + ex);
-                     loginSuccess = false;
+                     System.out.println("Unable to authenticate to Google Docs " + ex);
+                     return;
             }
-            finally
-            {
-                    if (loginSuccess)
-                    {
-                            System.out.println("Authenticated to Google Docs");
-                    }
-            }
-
-            boolean writeToGdoc = true;
             
+            System.out.println("Authenticated to Google Docs");
+
             Date date = new Date();
             DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
             String testInput = "Test entry created at " + dateFormat.format(date);
@@ -181,14 +158,11 @@ public class TestConnection
             }
             catch (Exception ex)
             {       
-                    System.out.println("Error" + ex);
-                    writeToGdoc = false;
-            }
-            finally
-            {
-                    System.out.println("Successfully edited test sheet with values \"" + dateFormat.format(date) + "\"");
-                    System.out.println("View the spreadsheet: https://docs.google.com/spreadsheets/d/1_tc_bvbDlgnQfv_WYdhXhZnt9Vum-Ci_XoZGleDzxuM/edit?usp=sharing");
+                    System.out.println("Error " + ex);
+                    return;
             }
 
+            System.out.println("Successfully edited test sheet with values \"" + dateFormat.format(date) + "\"");
+            System.out.println("View the spreadsheet: https://docs.google.com/spreadsheets/d/1_tc_bvbDlgnQfv_WYdhXhZnt9Vum-Ci_XoZGleDzxuM/edit?usp=sharing");
         }
 }
