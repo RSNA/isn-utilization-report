@@ -24,11 +24,18 @@
 
 package org.rsna.isn.utilizationreport;
 
-
-import com.google.gdata.util.AuthenticationException;
+//import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.jackson.JacksonFactory;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.util.Random;
 import org.apache.log4j.Logger;
@@ -45,7 +52,7 @@ public class App
 {
     private static final Logger logger = Logger.getLogger(App.class);
     
-    public static void main( String[] args ) throws InterruptedException, SQLException
+    public static void main( String[] args ) throws InterruptedException, SQLException,GeneralSecurityException, IOException
     {
             Environment.init("utilization-report");
         
@@ -86,9 +93,30 @@ public class App
                     return;
             }
             
+                    
+            File p12 = new File(confDir,"gdoc-key.p12");
             
-            String gDocUser = props.getProperty("gdoc.username");
-            String gDocPass = props.getProperty("gdoc.password");
+            if (!p12.exists())
+            {
+                    System.out.println("gdoc-key.p12 file not found in " + confDir.getPath());
+                    return;
+            }
+            
+            HttpTransport httpTransport = new NetHttpTransport();
+            JacksonFactory jsonFactory = new JacksonFactory();
+        
+            String[] SCOPESArray = {"https://spreadsheets.google.com/feeds", "https://spreadsheets.google.com/feeds/spreadsheets/private/full", "https://docs.google.com/feeds"};
+            final List SCOPES = Arrays.asList(SCOPESArray);
+        
+            GoogleCredential credential = new GoogleCredential.Builder()
+                    .setTransport(httpTransport)
+                    .setJsonFactory(jsonFactory)
+                    .setServiceAccountId(props.getProperty("gdoc.clientid"))
+                    .setServiceAccountScopes(SCOPES)
+                    .setServiceAccountPrivateKeyFromP12File(p12)
+                    .build();
+
+           
             String gDocSpreadsheet = props.getProperty("gdoc.spreadsheet");
             String gDocWorksheet = props.getProperty("gdoc.worksheet");
 
@@ -112,17 +140,8 @@ public class App
             }
 
             GSpreadsheet gSheet = new GSpreadsheet();
+            gSheet.getService().setOAuth2Credentials(credential);
             
-            try
-            {
-                     gSheet.login(gDocUser,gDocPass);
-            }
-            catch (AuthenticationException ex) 
-            {
-                    logger.error("Unable to authenticate to Google", ex);
-                    return;
-            }
-
             try
             {
                     gSheet.setSpreadsheet(gDocSpreadsheet);

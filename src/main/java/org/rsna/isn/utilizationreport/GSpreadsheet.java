@@ -73,6 +73,10 @@ public class GSpreadsheet {
         
         private static final Logger logger = Logger.getLogger(GSpreadsheet.class);
 
+        public SpreadsheetService getService()
+        {
+                return this.service;
+        }
         public void setSpreadsheet(String title) throws MalformedURLException, IOException, ServiceException
         {
                 URL spreadsheetFeedURL = new URL("https://spreadsheets.google.com/feeds/spreadsheets/private/full");

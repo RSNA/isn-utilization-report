@@ -24,19 +24,25 @@
 
 package org.rsna.isn.utilizationreport.util;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.jackson.JacksonFactory;
 import com.google.gdata.data.spreadsheet.CellEntry;
 import com.google.gdata.data.spreadsheet.CellFeed;
-import com.google.gdata.util.AuthenticationException;
 import com.google.gdata.util.ServiceException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.security.GeneralSecurityException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Properties;
 import org.rsna.isn.util.Environment;
 import org.rsna.isn.utilizationreport.GSpreadsheet;
@@ -56,7 +62,7 @@ import org.rsna.isn.utilizationreport.GSpreadsheet;
 
 public class TestConnection 
 {
-        public static void main( String[] args ) throws UnknownHostException, IOException, ServiceException, ParseException
+        public static void main( String[] args ) throws UnknownHostException, IOException, ServiceException, ParseException, GeneralSecurityException
         {
             
             Environment.init("utilization-report");
@@ -80,8 +86,29 @@ public class TestConnection
                     return;
             }
         
-            String gDocUser = props.getProperty("gdoc.username");
-            String gDocPass = props.getProperty("gdoc.password");
+            File p12 = new File(confDir,"gdoc-key.p12");
+            
+            if (!p12.exists())
+            {
+                    System.out.println("gdoc-key.p12 file not found in " + confDir.getPath());
+                    return;
+            }
+            
+            HttpTransport httpTransport = new NetHttpTransport();
+            JacksonFactory jsonFactory = new JacksonFactory();
+        
+            String[] SCOPESArray = {"https://spreadsheets.google.com/feeds", "https://spreadsheets.google.com/feeds/spreadsheets/private/full", "https://docs.google.com/feeds"};
+            final List SCOPES = Arrays.asList(SCOPESArray);
+        
+            GoogleCredential credential = new GoogleCredential.Builder()
+                    .setTransport(httpTransport)
+                    .setJsonFactory(jsonFactory)
+                    .setServiceAccountId(props.getProperty("gdoc.clientid"))
+                    .setServiceAccountScopes(SCOPES)
+                    .setServiceAccountPrivateKeyFromP12File(p12)
+                    .build();
+        
+        
             String gDocSpreadsheet = props.getProperty("gdoc.spreadsheet");
             String gDocWorksheet = props.getProperty("gdoc.worksheet");
 
@@ -90,7 +117,7 @@ public class TestConnection
             String proxyPort = props.getProperty("gdoc.proxyport");
 
             //google doesnt like the keystore
-            //removing keystore properties for now until a better solution is found
+            //removing keystore properties for now until a better solution is found            
             System.getProperties().remove("javax.net.ssl.keyStore");
             System.getProperties().remove("javax.net.ssl.keyStorePassword");
             System.getProperties().remove("javax.net.ssl.trustStore");
@@ -125,19 +152,8 @@ public class TestConnection
                         
             GSpreadsheet gSheet = new GSpreadsheet();
             
-            try
-            {
-                     gSheet.login(gDocUser,gDocPass);
-                     
-            }
-            catch (AuthenticationException ex) 
-            {
-                     System.out.println("Unable to authenticate to Google Docs " + ex);
-                     return;
-            }
+            gSheet.getService().setOAuth2Credentials(credential);
             
-            System.out.println("Authenticated to Google Docs");
-
             Date date = new Date();
             DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
             String testInput = "Test entry created at " + dateFormat.format(date);
@@ -163,6 +179,6 @@ public class TestConnection
             }
 
             System.out.println("Successfully edited test sheet with values \"" + dateFormat.format(date) + "\"");
-            System.out.println("View the spreadsheet: https://docs.google.com/spreadsheets/d/1_tc_bvbDlgnQfv_WYdhXhZnt9Vum-Ci_XoZGleDzxuM/edit?usp=sharing");
+            System.out.println("View the spreadsheet: https://docs.google.com/spreadsheets/d/1_tc_bvbDlgnQfv_WYdhXhZnt9Vum-Ci_XoZGleDzxuM/edit?usp=sharing");           
         }
 }
